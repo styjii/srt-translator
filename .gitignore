@@ -1,0 +1,12 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Fichiers de sous-titres personnels (à adapter selon vos besoins)
+*.srt
+!example.srt
