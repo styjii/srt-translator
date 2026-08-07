@@ -22,12 +22,14 @@ Un outil en ligne de commande pour traduire des fichiers de sous-titres `.srt` (
 
 ```
 srt-translator/
-├── app.py                 # Interface CLI (Typer + Rich)
-├── translate_srt.py       # Module métier (parsing, moteurs, orchestration)
-├── requirements.txt       # Dépendances Python
-├── .env.example           # Modèle de configuration des clés API
+├── pyproject.toml          # Métadonnées du package + point d'entrée CLI
+├── srt_translator/
+│   ├── __init__.py
+│   ├── cli.py              # Interface CLI (Typer + Rich)
+│   └── translate_srt.py    # Module métier (parsing, moteurs, orchestration)
+├── .env.example            # Modèle de configuration des clés API
 ├── .gitignore
-├── LICENSE                # Licence MIT
+├── LICENSE                 # Licence MIT
 └── README.md
 ```
 
@@ -38,10 +40,12 @@ srt-translator/
 ```bash
 git clone https://github.com/styjii/srt-translator.git
 cd srt-translator
-pip install -r requirements.txt --break-system-packages
+pip install -e . --break-system-packages
 ```
 
 > `--break-system-packages` est nécessaire sur certains environnements Linux récents (Debian/Ubuntu) qui protègent l'installation Python système. Omettez-le si vous utilisez un environnement virtuel (`venv`).
+>
+> Le mode éditable (`-e`) installe une commande `srt-translate` disponible partout sur votre système, tout en gardant le code lié au dépôt source : toute modification du code est immédiatement prise en compte, sans réinstallation.
 
 ### Clés API
 
@@ -67,24 +71,25 @@ Le fichier `.env` est automatiquement chargé au démarrage (via `python-dotenv`
 
 ```bash
 # Aide générale
-python3 app.py --help
+srt-translate --help
 
 # Aperçu d'un fichier .srt sans le traduire
-python3 app.py infos anime.srt
+srt-translate infos anime.srt
 
 # Traduire avec DeepL (par défaut, EN → FR)
-python3 app.py traduire anime.srt sous_titres_fr.srt
+srt-translate traduire anime.srt sous_titres_fr.srt
 
 # Traduire avec Claude
-python3 app.py traduire anime.srt sous_titres_fr.srt --engine anthropic
+srt-translate traduire anime.srt sous_titres_fr.srt --engine anthropic
 
 # Spécifier les langues source/cible (DeepL)
-python3 app.py traduire anime.srt sous_titres_fr.srt --source EN --target FR
+srt-translate traduire anime.srt sous_titres_fr.srt --source EN --target FR
 ```
 
 ### Exemple de sortie
 
 ```
+❯ srt-translate traduire anime.srt sous_titres_fr.srt
 📖 Lecture de anime.srt ...
 ✓ 5816 répliques détectées.
 
@@ -100,7 +105,7 @@ Traduction en cours ████████████████████
 
 ## 🏗️ Architecture
 
-Le module `translate_srt.py` est organisé autour de quelques classes :
+Le module `srt_translator/translate_srt.py` est organisé autour de quelques classes :
 
 | Classe | Rôle |
 |---|---|
@@ -114,7 +119,7 @@ Le module `translate_srt.py` est organisé autour de quelques classes :
 ### Ajouter un nouveau moteur de traduction
 
 ```python
-from translate_srt import TranslationEngine
+from srt_translator.translate_srt import TranslationEngine
 
 class GoogleTranslateEngine(TranslationEngine):
     def translate(self, texts, progress_cb=None):
@@ -129,7 +134,7 @@ Puis l'enregistrer dans le dictionnaire `ENGINES` du module.
 ## 🧩 Utilisation en tant que module Python
 
 ```python
-from translate_srt import SrtDocument, DeepLEngine, SubtitleTranslator
+from srt_translator.translate_srt import SrtDocument, DeepLEngine, SubtitleTranslator
 
 document = SrtDocument.from_file("input.srt")
 engine = DeepLEngine(source="EN", target="FR")

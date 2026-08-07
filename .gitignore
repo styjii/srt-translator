@@ -4,9 +4,22 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
 .venv/
 venv/
+env/
+
+# Artefacts de packaging (générés par pip install -e . / build)
+*.egg-info/
+build/
+dist/
+*.egg
 
 # Fichiers de sous-titres personnels (à adapter selon vos besoins)
 *.srt
 !example.srt
+
+# Éditeurs / IDE
+.vscode/
+.idea/
+*.swp

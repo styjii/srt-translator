@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "srt-translator"
+version = "1.0.0"
+description = "CLI de traduction de sous-titres .srt (DeepL ou Claude), avec interface stylée Typer + Rich."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Styjii" }]
+requires-python = ">=3.9"
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.0",
+    "deepl>=1.17",
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/styjii/srt-translator"
+
+# C'est cette section qui crée la commande "srt-translate" après installation.
+# Format : nom_de_la_commande = "module.chemin:objet_appelable"
+[project.scripts]
+srt-translate = "srt_translator.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["srt_translator*"]

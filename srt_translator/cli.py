@@ -30,7 +30,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from translate_srt import (
+from .translate_srt import (
     MissingApiKeyError,
     SrtDocument,
     SubtitleTranslator,
