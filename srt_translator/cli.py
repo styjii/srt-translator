@@ -30,6 +30,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
+from .subtitle_downloader import SubtitleDownloadError, SubtitleDownloader
 from .translate_srt import (
     MissingApiKeyError,
     SrtDocument,
@@ -136,6 +137,56 @@ def traduire(
             f"[bold green]{count}[/bold green] répliques traduites avec succès.\n"
             f"Fichier écrit dans : [bold]{sortie}[/bold]",
             title="✅ Terminé",
+            border_style="green",
+        )
+    )
+
+
+@app.command()
+def telecharger(
+    url: str = typer.Argument(..., help="URL de la vidéo (YouTube ou autre plateforme supportée par yt-dlp)"),
+    lang: str = typer.Option("en", "--lang", "-l", help="Code langue des sous-titres à récupérer"),
+    auto: bool = typer.Option(
+        True, "--auto/--no-auto", help="Accepter les sous-titres générés automatiquement si aucun officiel n'existe"
+    ),
+    sortie: Path = typer.Option(Path("."), "--output", "-o", help="Dossier où écrire le fichier de sous-titres"),
+    lister: bool = typer.Option(
+        False, "--lister", help="Lister les langues disponibles pour cette vidéo, sans rien télécharger"
+    ),
+):
+    """Télécharge les sous-titres d'une vidéo (sans télécharger la vidéo elle-même)."""
+    downloader = SubtitleDownloader(lang=lang, auto_generated=auto, output_dir=str(sortie))
+
+    if lister:
+        console.print(f"[bold cyan]🔍 Recherche des sous-titres disponibles pour[/bold cyan] {url} ...")
+        try:
+            dispo = downloader.list_available_subtitles(url)
+        except SubtitleDownloadError as e:
+            console.print(f"[bold red]Erreur :[/bold red] {e}")
+            raise typer.Exit(code=1)
+
+        table = Table(title="Sous-titres disponibles")
+        table.add_column("Type", style="cyan")
+        table.add_column("Langues", style="white")
+        table.add_row("Officiels", ", ".join(dispo["officiels"]) or "(aucun)")
+        table.add_row("Auto-générés", ", ".join(dispo["auto_generes"]) or "(aucun)")
+        console.print(table)
+        return
+
+    console.print(f"[bold cyan]⬇️  Téléchargement des sous-titres ({lang})[/bold cyan] depuis {url} ...")
+    try:
+        fichiers = downloader.download(url)
+    except SubtitleDownloadError as e:
+        console.print(f"\n[bold red]Erreur :[/bold red] {e}")
+        console.print(
+            "[dim]Astuce : utilisez --lister pour voir les langues réellement disponibles pour cette vidéo.[/dim]"
+        )
+        raise typer.Exit(code=1)
+
+    console.print(
+        Panel(
+            "\n".join(f"[bold]{f}[/bold]" for f in fichiers),
+            title=f"✅ {len(fichiers)} fichier(s) de sous-titres téléchargé(s)",
             border_style="green",
         )
     )

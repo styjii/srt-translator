@@ -3,3 +3,4 @@ rich
 deepl
 requests
 python-dotenv
+yt-dlp

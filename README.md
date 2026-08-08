@@ -9,6 +9,7 @@ Un outil en ligne de commande pour traduire des fichiers de sous-titres `.srt` (
 
 ## ✨ Fonctionnalités
 
+- Téléchargement des sous-titres d'une vidéo (YouTube et autres plateformes) via `yt-dlp`, sans télécharger la vidéo elle-même
 - Parseur `.srt` robuste (ligne par ligne, sans risque de blocage sur de gros fichiers)
 - Deux moteurs de traduction interchangeables : **DeepL** ou **Claude (Anthropic)**
 - Barre de progression animée pendant la traduction par lots
@@ -23,10 +24,12 @@ Un outil en ligne de commande pour traduire des fichiers de sous-titres `.srt` (
 ```
 srt-translator/
 ├── pyproject.toml          # Métadonnées du package + point d'entrée CLI
+├── requirements.txt        # Dépendances (alternative à pyproject.toml)
 ├── srt_translator/
 │   ├── __init__.py
-│   ├── cli.py              # Interface CLI (Typer + Rich)
-│   └── translate_srt.py    # Module métier (parsing, moteurs, orchestration)
+│   ├── cli.py                    # Interface CLI (Typer + Rich)
+│   ├── translate_srt.py          # Module métier : traduction (parsing, moteurs, orchestration)
+│   └── subtitle_downloader.py    # Module métier : téléchargement de sous-titres (yt-dlp)
 ├── .env.example            # Modèle de configuration des clés API
 ├── .gitignore
 ├── LICENSE                 # Licence MIT
@@ -46,6 +49,13 @@ pip install -e . --break-system-packages
 > `--break-system-packages` est nécessaire sur certains environnements Linux récents (Debian/Ubuntu) qui protègent l'installation Python système. Omettez-le si vous utilisez un environnement virtuel (`venv`).
 >
 > Le mode éditable (`-e`) installe une commande `srt-translate` disponible partout sur votre système, tout en gardant le code lié au dépôt source : toute modification du code est immédiatement prise en compte, sans réinstallation.
+
+**Alternative** (sans installer la commande `srt-translate`, juste les dépendances) :
+
+```bash
+pip install -r requirements.txt --break-system-packages
+python3 -m srt_translator.cli --help
+```
 
 ### Clés API
 
@@ -73,6 +83,12 @@ Le fichier `.env` est automatiquement chargé au démarrage (via `python-dotenv`
 # Aide générale
 srt-translate --help
 
+# Lister les langues de sous-titres disponibles pour une vidéo
+srt-translate telecharger "https://youtube.com/watch?v=XXXXX" --lister
+
+# Télécharger les sous-titres d'une vidéo (YouTube ou autre plateforme yt-dlp)
+srt-translate telecharger "https://youtube.com/watch?v=XXXXX" --lang en -o ./subs
+
 # Aperçu d'un fichier .srt sans le traduire
 srt-translate infos anime.srt
 
@@ -85,6 +101,15 @@ srt-translate traduire anime.srt sous_titres_fr.srt --engine anthropic
 # Spécifier les langues source/cible (DeepL)
 srt-translate traduire anime.srt sous_titres_fr.srt --source EN --target FR
 ```
+
+### Workflow complet : télécharger puis traduire
+
+```bash
+srt-translate telecharger "https://youtube.com/watch?v=XXXXX" --lang en -o ./subs
+srt-translate traduire ./subs/nom_video.en.srt sous_titres_fr.srt
+```
+
+> ℹ️ La commande `telecharger` ne récupère que les sous-titres publiquement proposés par la plateforme (officiels ou générés automatiquement) — jamais la vidéo elle-même. Assurez-vous d'avoir le droit d'utiliser le contenu téléchargé selon les conditions d'utilisation de la plateforme concernée.
 
 ### Exemple de sortie
 
@@ -115,6 +140,14 @@ Le module `srt_translator/translate_srt.py` est organisé autour de quelques cla
 | `AnthropicEngine` | Implémentation du moteur Claude |
 | `SubtitleTranslator` | Orchestre un `TranslationEngine` sur un `SrtDocument` |
 | `create_engine(nom, **kwargs)` | Fabrique un moteur à partir de son nom (`"deepl"` / `"anthropic"`) |
+
+Le module `srt_translator/subtitle_downloader.py` gère le téléchargement :
+
+| Classe/méthode | Rôle |
+|---|---|
+| `SubtitleDownloader` | Encapsule `yt-dlp` pour récupérer uniquement les sous-titres d'une vidéo |
+| `.list_available_subtitles(url)` | Liste les langues disponibles (officielles/auto-générées) sans télécharger |
+| `.download(url)` | Télécharge les sous-titres dans la langue configurée |
 
 ### Ajouter un nouveau moteur de traduction
 
